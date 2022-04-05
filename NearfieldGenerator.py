@@ -19,7 +19,7 @@ f = 1E10#频率
 waveLambda = c/f#波长
 k = 2*np.pi/waveLambda#k矢波数
 ds = waveLambda/3#离散精度
-z0 = 0.2*waveLambda#传播距离
+z0 = (np.random.rand()+0.001)*200*waveLambda#传播距离
 Xrange,Yrange=128,128#范围点数
 X, Y = np.linspace(0, Xrange-1,Xrange,dtype=int), np.linspace(0, Yrange-1,Yrange,dtype=int)
 Xrangeext,Yrangeext = 2*Xrange,2*Yrange#扩零后的点数
@@ -28,7 +28,7 @@ Xext2 = np.transpose(np.broadcast_to(Xext,(Xrangeext,Yrangeext)))#扩0后逐点�
 Yext2 = np.broadcast_to(Xext,(Xrangeext,Yrangeext))
 
 
-NumSamples = 1
+NumSamples = 1000
 tfrecord_file = '.\\Images\\TrainData.tfrecords'
 with tf.io.TFRecordWriter(tfrecord_file) as writer:
      for i in range(NumSamples):
@@ -140,9 +140,12 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         print (i)
         np.save(".\\Images\\train_data\\Source\\source"+str(i)+'.npy',Surf)
         np.save(".\\Images\\train_data\\Target\\target"+str(i)+'.npy',Eresult) 
-        Surf2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
+        Surf2Write = np.zeros([Xrange,Yrange,5],dtype = np.float32)
         Surf2Write[:,:,0] = np.abs(Surf)
         Surf2Write[:,:,1] = np.angle(Surf)
+        Surf2Write[:,:,2] = z0
+        Surf2Write[:,:,3] = theta
+        Surf2Write[:,:,4] = phi
         Surf2Write = Surf2Write.flatten().tolist()
         Eresult2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
         Eresult2Write[:,:,0] = np.abs(Eresult)
@@ -157,36 +160,36 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         writer.write(example.SerializeToString())   
 print("All Files are generated.")
 
-dataset = tf.data.TFRecordDataset(tfrecord_file)    
-feature_description = { # 定义Feature结构，告诉解码器每个Feature的类型是什么
-    'Source': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32),
-    'Target': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32)
-}
+# dataset = tf.data.TFRecordDataset(tfrecord_file)    
+# feature_description = { # 定义Feature结构，告诉解码器每个Feature的类型是什么
+#     'Source': tf.io.FixedLenFeature([Xrange,Yrange,5], tf.float32),
+#     'Target': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32)
+# }
 
-def read_example(example_string): #    从TFrecord格式文件中读取数据
-    feature_dict = tf.io.parse_single_example(example_string, feature_description)
-    return feature_dict['Source'], feature_dict['Target']
+# def read_example(example_string): #    从TFrecord格式文件中读取数据
+#     feature_dict = tf.io.parse_single_example(example_string, feature_description)
+#     return feature_dict['Source'], feature_dict['Target']
 
-dataset = dataset.map(read_example) # 解析数据
+# dataset = dataset.map(read_example) # 解析数据
 
-for index, one_element in enumerate(dataset): #检查数据
-    print(index,one_element[0].shape,one_element[1].shape)
-    plt.contourf(X,Y,np.abs(Surf), 50, cmap='rainbow')
-    plt.show() 
-    plt.contourf(X,Y,np.angle(Surf), 50, cmap='rainbow')
-    plt.show()  
-    plt.contourf(X,Y,np.abs(Eresult), 50, cmap='rainbow')
-    plt.show() 
-    plt.contourf(X,Y,np.angle(Eresult), 50, cmap='rainbow')
-    plt.show()  
-    plt.contourf(X,Y,one_element[0][:,:,0], 50, cmap='rainbow')
-    plt.show() 
-    plt.contourf(X,Y,one_element[0][:,:,1], 50, cmap='rainbow')
-    plt.show() 
-    plt.contourf(X,Y,one_element[1][:,:,0], 50, cmap='rainbow')
-    plt.show() 
-    plt.contourf(X,Y,one_element[1][:,:,1], 50, cmap='rainbow')
-    plt.show() 
+# for index, one_element in enumerate(dataset): #检查数据
+#     print(index,one_element[0].shape,one_element[1].shape)
+#     plt.contourf(X,Y,np.abs(Surf), 50, cmap='rainbow')
+#     plt.show() 
+#     plt.contourf(X,Y,np.angle(Surf), 50, cmap='rainbow')
+#     plt.show()  
+#     plt.contourf(X,Y,np.abs(Eresult), 50, cmap='rainbow')
+#     plt.show() 
+#     plt.contourf(X,Y,np.angle(Eresult), 50, cmap='rainbow')
+#     plt.show()  
+#     plt.contourf(X,Y,one_element[0][:,:,0], 50, cmap='rainbow')
+#     plt.show() 
+#     plt.contourf(X,Y,one_element[0][:,:,1], 50, cmap='rainbow')
+#     plt.show() 
+#     plt.contourf(X,Y,one_element[1][:,:,0], 50, cmap='rainbow')
+#     plt.show() 
+#     plt.contourf(X,Y,one_element[1][:,:,1], 50, cmap='rainbow')
+#     plt.show() 
 
 
 

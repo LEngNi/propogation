@@ -19,7 +19,7 @@ f = 1E10#频率
 waveLambda = c/f#波长
 k = 2*np.pi/waveLambda#k矢波数
 ds = waveLambda/3#离散精度
-z0 = 160*waveLambda#传播距离
+z0 = 1*waveLambda#传播距离
 Xrange,Yrange=128,128#范围点数
 X, Y = np.linspace(0, Xrange-1,Xrange,dtype=int), np.linspace(0, Yrange-1,Yrange,dtype=int)
 Xrangeext,Yrangeext = 2*Xrange,2*Yrange#扩零后的点数
@@ -49,7 +49,7 @@ Yext2 = np.broadcast_to(Xext,(Xrangeext,Yrangeext))
 #     #print (n)
 # Surf=np.sum(SurfR,axis=2)    
 
-Surf = np.loadtxt(r'.\gauss.txt',dtype='float32')
+Surf = np.load(r'.\g3.npy')
 orgi = np.abs(Surf)
 orgi2 = np.angle(Surf)
 plt.contourf(X,Y,orgi, 50, cmap='rainbow')
@@ -59,8 +59,8 @@ plt.show()
 """
 坐标旋转，theta为俯仰角，phi为方位角
 """
-theta = np.pi/3
-phi = 0
+theta = 0
+phi = np.pi/2
 #旋转矩阵，Ma为从初始平面变换至旋转平面；MaI相反
 MaI = np.array([[np.cos(phi)*np.cos(theta), -np.sin(phi), np.cos(phi)*np.sin(theta)],[np.sin(phi)*np.cos(theta), np.cos(phi), np.sin(phi)*np.sin(theta)],[-np.sin(theta), 0, np.cos(theta)]])
 Ma = np.linalg.inv(MaI)
@@ -114,7 +114,7 @@ AEext = AEext.reshape(Xrangeext*Yrangeext,1)
 AEextG1 = griddata(points, AEext, (Vx,Vy),method='linear').reshape(Xrangeext,Yrangeext)
 np.nan_to_num(AEextG1,copy=False,nan = -2)
 AEextG = AEextG1 * (np.abs(Vz)/np.abs(Vzt))
-AEextG[Vz<=0.01] = 1E-19
+AEextG[Vz<=0] = 1E-19
 
 '''
 定义系统传播函数
