@@ -5,9 +5,15 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import os
-from keras import backend as K
+from tensorflow.keras import backend as K
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+DataPath,LogPath,TrainImgPath = '.\\Images', '.\\Images', '.\\Images'
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 
-DataPath,LogPath,TrainImgPath = '.\\PhaseImages', '.\\PhaseImages', '.\\PhaseImages'
 if not os.path.isdir(DataPath): os.makedirs(DataPath)
 if not os.path.isdir(LogPath):  os.makedirs(LogPath)
 if not os.path.isdir(TrainImgPath): os.makedirs(TrainImgPath)  
@@ -87,7 +93,7 @@ c9 = tf.keras.layers.Dropout(0.1)(c9)
 c9 = tf.keras.layers.Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c9)
 #c9 = tf.keras.layers.BatchNormalization()(c9)
 
-outputs = tf.keras.layers.Conv2D(2, (1, 1),activation = 'softmax')(c9)
+outputs = tf.keras.layers.Conv2D(2, (1, 1))(c9)
 model = tf.keras.Model(inputs=[inputs], outputs=[outputs])
 
 #自定义loss函数
@@ -122,20 +128,20 @@ print(model.summary()) #打印神经网络结构，统计参数数目
 
 #--------------------------------------------
 # 读取 TFRecord 文件
-tfrecord_file = '.\\PhaseImages\\PhaseTrainData.tfrecords'
+tfrecord_file = '.\\Images\\TrainData.tfrecords'
 raw_dataset = tf.data.TFRecordDataset(tfrecord_file)   
 #读取验证集文件
-tfrecord_file_val = '.\\PhaseImages\\PhaseValidationData.tfrecords'
+tfrecord_file_val = '.\\Images\\ValidationData.tfrecords'
 raw_dataset_val = tf.data.TFRecordDataset(tfrecord_file_val)
 
 
 feature_description = { # 定义Feature结构，告诉解码器每个Feature的类型是什么
-    'image': tf.io.FixedLenFeature([Xrange,Yrange,5], tf.float32),
-    'Truth': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32) }
+    'Source': tf.io.FixedLenFeature([Xrange,Yrange,5], tf.float32),
+    'Target': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32) }
 
 def read_example(example_string): #    从TFrecord格式文件中读取数据
     feature_dict = tf.io.parse_single_example(example_string, feature_description)
-    return feature_dict['image'], feature_dict['Truth']
+    return feature_dict['Source'], feature_dict['Target']
 
 
 
@@ -143,15 +149,15 @@ NumSamples=1000
 buffer_size=NumSamples  #总数
 batch_size=16    #每次训练样本数，平均后产生梯度即可
 #num_batches=buffer_size//batch_size #样本批次
-EPOCHS=10 #重复一整套训练数据的次数
+EPOCHS=100 #重复一整套训练数据的次数
 
 train_dataset = raw_dataset.map(read_example,num_parallel_calls=tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.shuffle(buffer_size).batch(batch_size)#.repeat(5) 找199个出来，设每批次399/40个
 
-val_dataset = raw_dataset_val.map(read_example, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-val_dataset = val_dataset.prefetch(tf.data.experimental.AUTOTUNE)
-val_dataset = val_dataset.shuffle(buffer_size).batch(batch_size)
+# val_dataset = raw_dataset_val.map(read_example, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+# val_dataset = val_dataset.prefetch(tf.data.experimental.AUTOTUNE)
+# val_dataset = val_dataset.shuffle(buffer_size).batch(batch_size)
 
 # #--------------------------------------------
 # # 从文件恢复模型参数,暂时根据需要手动控制
@@ -167,13 +173,13 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=LogPath, histogram
 train_summary_writer = tf.summary.create_file_writer(LogPath)
 
 #早停策略
-earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0.01,patience=3)
+earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='MSE', min_delta=0.01,patience=3)
 
 
 
 
 #训练 # validation_data 可以再用测试数据。打乱，分批已经处理过,这是是重复，插入监控
-history = model.fit(train_dataset, epochs=EPOCHS,validation_data = val_dataset)#,validation_data=train_dataset)
+history = model.fit(train_dataset, epochs=EPOCHS)#,validation_data = val_dataset)#,validation_data=train_dataset)
 
 #记录保存模型参数，待后续使用
 manager.save()
@@ -196,19 +202,23 @@ def onehot_to_mask(mask, palette):
     return x
 
 
-PhaseOriginal=np.load(DataPath+'\\validation_data\\Source\\source0.npy')   
-PhaseWrap=np.load(DataPath+'\\validation_data\\Target\\target0.npy')   
+FieldSource=np.load(DataPath+'\\validation_data\\Source\\source0.npy')   
+FieldTarget=np.load(DataPath+'\\validation_data\\Target\\target0.npy')   
 #Mask=np.load(DataPath+'\\validation_data\\Mask\\mask0.npy')  
-PhaseWrap=PhaseWrap.reshape(-1,Xrange,Yrange,1)
-PhaseMask=model.predict(PhaseWrap) 
-print('UnWraped')
-PhaseMask = PhaseMask.reshape(Xrange,Yrange)
+FieldSource=FieldSource.reshape(-1,Xrange,Yrange,5)
+FieldPredic=model.predict(FieldSource) 
 
-plt.contourf(X,Y,PhaseWrap.reshape(Xrange,Yrange), 50, cmap='rainbow')
+FieldPredicAmp = FieldPredic[:,:,:,0].reshape(Xrange,Yrange)
+FieldPredicPha = FieldPredic[:,:,:,1].reshape(Xrange,Yrange)
+FieldTargetAmp = np.abs(FieldTarget)
+FieldTargetPha = np.angle(FieldTarget)
+plt.contourf(X,Y,FieldTargetAmp, 50, cmap='rainbow')
 plt.show() 
-plt.contourf(X,Y,PhaseOriginal.reshape(Xrange,Yrange), 50, cmap='rainbow')
+plt.contourf(X,Y,FieldTargetPha, 50, cmap='rainbow')
 plt.show() 
-plt.contourf(X,Y,PhaseMask.reshape(Xrange,Yrange), 50, cmap='rainbow')
+plt.contourf(X,Y,FieldPredicAmp, 50, cmap='rainbow')
+plt.show() 
+plt.contourf(X,Y,FieldPredicPha, 50, cmap='rainbow')
 plt.show() 
 
 '''

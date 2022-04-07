@@ -19,7 +19,7 @@ f = 1E10#频率
 waveLambda = c/f#波长
 k = 2*np.pi/waveLambda#k矢波数
 ds = waveLambda/3#离散精度
-z0 = (np.random.rand()+0.001)*200*waveLambda#传播距离
+
 Xrange,Yrange=128,128#范围点数
 X, Y = np.linspace(0, Xrange-1,Xrange,dtype=int), np.linspace(0, Yrange-1,Yrange,dtype=int)
 Xrangeext,Yrangeext = 2*Xrange,2*Yrange#扩零后的点数
@@ -54,6 +54,7 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         """
         坐标旋转，theta为俯仰角，phi为方位角
         """
+        z0 = (np.random.rand()+0.001)*200*waveLambda#传播距离
         theta = (np.random.rand()-0.5)*2*np.pi/3
         phi = (np.random.rand()-0.5)*2*np.pi/3
         #旋转矩阵，Ma为从初始平面变换至旋转平面；MaI相反
@@ -138,18 +139,20 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         
         
         print (i)
-        np.save(".\\Images\\train_data\\Source\\source"+str(i)+'.npy',Surf)
-        np.save(".\\Images\\train_data\\Target\\target"+str(i)+'.npy',Eresult) 
+
+
         Surf2Write = np.zeros([Xrange,Yrange,5],dtype = np.float32)
         Surf2Write[:,:,0] = np.abs(Surf)
         Surf2Write[:,:,1] = np.angle(Surf)
         Surf2Write[:,:,2] = z0
         Surf2Write[:,:,3] = theta
         Surf2Write[:,:,4] = phi
+        np.save(".\\Images\\train_data\\Source\\source"+str(i)+'.npy',Surf2Write)
         Surf2Write = Surf2Write.flatten().tolist()
         Eresult2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
         Eresult2Write[:,:,0] = np.abs(Eresult)
         Eresult2Write[:,:,1] = np.angle(Eresult)
+        np.save(".\\Images\\train_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
         Eresult2Write =Eresult2Write.flatten().tolist()     
         featureDic = {   # 建立 tf.train.Feature 字典
            'Source': tf.train.Feature(float_list=tf.train.FloatList(value=Surf2Write)), 
