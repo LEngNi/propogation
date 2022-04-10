@@ -27,9 +27,11 @@ Xext, Yext = np.linspace(0, Xrangeext-1,Xrangeext,dtype=int), np.linspace(0, Yra
 Xext2 = np.transpose(np.broadcast_to(Xext,(Xrangeext,Yrangeext)))#扩0后逐点的X坐标
 Yext2 = np.broadcast_to(Xext,(Xrangeext,Yrangeext))
 
+theta =np.pi/3
+phi = np.pi/3
 
-NumSamples = 1000
-tfrecord_file = '.\\Images\\TrainData.tfrecords'
+NumSamples = 1
+tfrecord_file = '.\\Images_z_theta_phi\\ValidationData.tfrecords'
 with tf.io.TFRecordWriter(tfrecord_file) as writer:
      for i in range(NumSamples):
         # 高斯方法生成
@@ -55,8 +57,7 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         坐标旋转，theta为俯仰角，phi为方位角
         """
         z0 = (np.random.rand()+0.001)*200*waveLambda#传播距离
-        theta = (np.random.rand()-0.5)*2*np.pi/3
-        phi = (np.random.rand()-0.5)*2*np.pi/3
+
         #旋转矩阵，Ma为从初始平面变换至旋转平面；MaI相反
         MaI = np.array([[np.cos(phi)*np.cos(theta), -np.sin(phi), np.cos(phi)*np.sin(theta)],[np.sin(phi)*np.cos(theta), np.cos(phi), np.sin(phi)*np.sin(theta)],[-np.sin(theta), 0, np.cos(theta)]])
         Ma = np.linalg.inv(MaI)
@@ -147,12 +148,12 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         Surf2Write[:,:,2] = z0
         Surf2Write[:,:,3] = theta
         Surf2Write[:,:,4] = phi
-        np.save(".\\Images\\train_data\\Source\\source"+str(i)+'.npy',Surf2Write)
+        np.save(".\\Images_z_theta_phi\\validation_data\\Source\\source"+str(i)+'.npy',Surf2Write)
         Surf2Write = Surf2Write.flatten().tolist()
         Eresult2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
         Eresult2Write[:,:,0] = np.abs(Eresult)
         Eresult2Write[:,:,1] = np.angle(Eresult)
-        np.save(".\\Images\\train_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
+        np.save(".\\Images_z_theta_phi\\validation_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
         Eresult2Write =Eresult2Write.flatten().tolist()     
         featureDic = {   # 建立 tf.train.Feature 字典
            'Source': tf.train.Feature(float_list=tf.train.FloatList(value=Surf2Write)), 

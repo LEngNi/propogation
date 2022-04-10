@@ -62,7 +62,7 @@ c5 = tf.keras.layers.Conv2D(256, (3, 3), activation='elu', kernel_initializer='h
 #c5 = tf.keras.layers.BatchNormalization()(c5)
 
 u6 = tf.keras.layers.Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c5)
-u6 = tf.keras.layers.concatenate([u6, c4])
+#u6 = tf.keras.layers.concatenate([u6, c4])
 c6 = tf.keras.layers.Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u6)
 #c6 = tf.keras.layers.BatchNormalization()(c6)
 c6 = tf.keras.layers.Dropout(0.2)(c6)
@@ -70,7 +70,7 @@ c6 = tf.keras.layers.Conv2D(128, (3, 3), activation='elu', kernel_initializer='h
 #c6 = tf.keras.layers.BatchNormalization()(c6)
 
 u7 = tf.keras.layers.Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(c6)
-u7 = tf.keras.layers.concatenate([u7, c3])
+#u7 = tf.keras.layers.concatenate([u7, c3])
 c7 = tf.keras.layers.Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u7)
 #c7 = tf.keras.layers.BatchNormalization()(c7)
 c7 = tf.keras.layers.Dropout(0.2)(c7)
@@ -78,7 +78,7 @@ c7 = tf.keras.layers.Conv2D(64, (3, 3), activation='elu', kernel_initializer='he
 #c7 = tf.keras.layers.BatchNormalization()(c7)
 
 u8 = tf.keras.layers.Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(c7)
-u8 = tf.keras.layers.concatenate([u8, c2])
+#u8 = tf.keras.layers.concatenate([u8, c2])
 c8 = tf.keras.layers.Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u8)
 #c8 = tf.keras.layers.BatchNormalization()(c8)
 c8 = tf.keras.layers.Dropout(0.1)(c8)
@@ -86,7 +86,7 @@ c8 = tf.keras.layers.Conv2D(32, (3, 3), activation='elu', kernel_initializer='he
 #c8 = tf.keras.layers.BatchNormalization()(c8)
 
 u9 = tf.keras.layers.Conv2DTranspose(16, (2, 2), strides=(2, 2), padding='same')(c8)
-u9 = tf.keras.layers.concatenate([u9, c1], axis=3)
+#u9 = tf.keras.layers.concatenate([u9, c1], axis=3)
 c9 = tf.keras.layers.Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u9)
 #c9 = tf.keras.layers.BatchNormalization()(c9)
 c9 = tf.keras.layers.Dropout(0.1)(c9)
@@ -182,11 +182,11 @@ earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='MSE', min_delta=0
 history = model.fit(train_dataset, epochs=EPOCHS)#,validation_data = val_dataset)#,validation_data=train_dataset)
 
 #记录保存模型参数，待后续使用
-manager.save()
+#manager.save()
 print("checkpoint saved.")
 
 # https://tensorflow.google.cn/guide/keras/save_and_serialize?hl=en
-model.save(LogPath+"\\ModelSaved2")#,custom_objects={"dice_loss": dice_loss}) # 或者 tf.keras.models.save_model(model,LogPath+"\ModelSaved") 
+model.save(LogPath+"\\ModelSaved-without6789")#,custom_objects={"dice_loss": dice_loss}) # 或者 tf.keras.models.save_model(model,LogPath+"\ModelSaved") 
 print('Model saved.') # 最后默认生成 .pb 格式模型
 #model=tf.keras.models.load_model(LogPath+"\\ModelSaved")
 #print('Model Loaded')
@@ -210,8 +210,8 @@ FieldPredic=model.predict(FieldSource)
 
 FieldPredicAmp = FieldPredic[:,:,:,0].reshape(Xrange,Yrange)
 FieldPredicPha = FieldPredic[:,:,:,1].reshape(Xrange,Yrange)
-FieldTargetAmp = np.abs(FieldTarget)
-FieldTargetPha = np.angle(FieldTarget)
+FieldTargetAmp = FieldTarget[:,:,0]
+FieldTargetPha = FieldTarget[:,:,1]
 plt.contourf(X,Y,FieldTargetAmp, 50, cmap='rainbow')
 plt.show() 
 plt.contourf(X,Y,FieldTargetPha, 50, cmap='rainbow')
