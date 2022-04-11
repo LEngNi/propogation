@@ -26,19 +26,20 @@ Xrangeext,Yrangeext = 2*Xrange,2*Yrange#扩零后的点数
 Xext, Yext = np.linspace(0, Xrangeext-1,Xrangeext,dtype=int), np.linspace(0, Yrangeext-1,Yrangeext,dtype=int)
 Xext2 = np.transpose(np.broadcast_to(Xext,(Xrangeext,Yrangeext)))#扩0后逐点的X坐标
 Yext2 = np.broadcast_to(Xext,(Xrangeext,Yrangeext))
+Ymesh,Xmesh=np.meshgrid(X, Y)
 
 theta =np.pi/3
 phi = np.pi/3
 
-NumSamples = 1
-tfrecord_file = '.\\Images_z_theta_phi\\ValidationData.tfrecords'
+NumSamples = 1000
+tfrecord_file = '.\\Images_mul_in\\TrainData.tfrecords'
 with tf.io.TFRecordWriter(tfrecord_file) as writer:
      for i in range(NumSamples):
         # 高斯方法生成
-        num=5
+        num=10
         N=np.arange(0, num) #高斯数量
-        def Gaussian(x,y,x0,y0,rx,ry,amp,pha):
-            return amp*np.exp(-(x-x0)*(x-x0)/rx/rx-(y-y0)*(y-y0)/ry/ry+1j*pha)
+        def Gaussian(x0,y0,rx,ry,amp,pha):
+            return amp*np.exp(-(Xmesh-x0)**2/rx/rx-(Ymesh-y0)**2/ry/ry+1j*pha)
 
         x0=np.random.randint(50,Xrange-48,size=(num)) #位置x0
         y0=np.random.randint(50,Yrange-48,size=(num)) #位置y0
@@ -49,8 +50,7 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         SurfR=np.zeros((Xrange,Yrange, num),dtype=complex)
         Surf=np.zeros((Xrange,Yrange),dtype=complex)
         for n in N:
-            for x,y in product (X, Y):
-                SurfR[x,y,n]=Gaussian(x,y,x0[n],y0[n],rx[n],rx[n],Amp[n],PhaR[n])
+            SurfR[:,:,n]=Gaussian(x0[n],y0[n],rx[n],rx[n],Amp[n],PhaR[n])
         Surf=np.sum(SurfR,axis=2)    
          
         """
@@ -142,21 +142,32 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         print (i)
 
 
-        Surf2Write = np.zeros([Xrange,Yrange,5],dtype = np.float32)
-        Surf2Write[:,:,0] = np.abs(Surf)
-        Surf2Write[:,:,1] = np.angle(Surf)
-        Surf2Write[:,:,2] = z0
-        Surf2Write[:,:,3] = theta
-        Surf2Write[:,:,4] = phi
-        np.save(".\\Images_z_theta_phi\\validation_data\\Source\\source"+str(i)+'.npy',Surf2Write)
+        Surf2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
+        Surf2Write[:,:,0] = np.real(Surf)
+        Surf2Write[:,:,1] = np.imag(Surf)
+        
+        # Surftemp = np.zeros([Xrange,Yrange,5],dtype = np.float32)
+        # Surftemp[:,:,0] = Surf2Write[:,:,0]
+        # Surftemp[:,:,1] = Surf2Write[:,:,1]
+        # Surftemp[:,:,2] = z0
+        # Surftemp[:,:,3] = theta
+        # Surftemp[:,:,4] = phi        
+        # np.save(".\\Images_mul_in\\validation_data\\Source\\source"+str(i)+'.npy',Surftemp)
+        
         Surf2Write = Surf2Write.flatten().tolist()
+        SurfPara = np.zeros(3,dtype = np.float32)
+        SurfPara[0] = z0
+        SurfPara[1] = theta
+        SurfPara[2] = phi
+        SurfPara = SurfPara.tolist()
         Eresult2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
-        Eresult2Write[:,:,0] = np.abs(Eresult)
-        Eresult2Write[:,:,1] = np.angle(Eresult)
-        np.save(".\\Images_z_theta_phi\\validation_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
+        Eresult2Write[:,:,0] = np.real(Eresult)
+        Eresult2Write[:,:,1] = np.imag(Eresult)
+        #np.save(".\\Images_mul_in\\validation_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
         Eresult2Write =Eresult2Write.flatten().tolist()     
         featureDic = {   # 建立 tf.train.Feature 字典
            'Source': tf.train.Feature(float_list=tf.train.FloatList(value=Surf2Write)), 
+           'Para': tf.train.Feature(float_list = tf.train.FloatList(value = SurfPara)),
            'Target': tf.train.Feature(float_list=tf.train.FloatList(value=Eresult2Write))
         }
         # 通过字典建立 Example, 序列化并写入 TFRecord 文件，登记为string数据
@@ -164,15 +175,16 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         writer.write(example.SerializeToString())   
 print("All Files are generated.")
 
-# dataset = tf.data.TFRecordDataset(tfrecord_file)    
-# feature_description = { # 定义Feature结构，告诉解码器每个Feature的类型是什么
-#     'Source': tf.io.FixedLenFeature([Xrange,Yrange,5], tf.float32),
-#     'Target': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32)
-# }
+dataset = tf.data.TFRecordDataset(tfrecord_file)    
+feature_description = { # 定义Feature结构，告诉解码器每个Feature的类型是什么
+    'Source': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32),
+    'Para': tf.io.FixedLenFeature([3,], tf.float32),
+    'Target': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32)
+}
 
 # def read_example(example_string): #    从TFrecord格式文件中读取数据
 #     feature_dict = tf.io.parse_single_example(example_string, feature_description)
-#     return feature_dict['Source'], feature_dict['Target']
+#     return feature_dict['Source'], feature_dict['Para'], feature_dict['Target']
 
 # dataset = dataset.map(read_example) # 解析数据
 
@@ -190,9 +202,9 @@ print("All Files are generated.")
 #     plt.show() 
 #     plt.contourf(X,Y,one_element[0][:,:,1], 50, cmap='rainbow')
 #     plt.show() 
-#     plt.contourf(X,Y,one_element[1][:,:,0], 50, cmap='rainbow')
+#     plt.contourf(X,Y,one_element[2][:,:,0], 50, cmap='rainbow')
 #     plt.show() 
-#     plt.contourf(X,Y,one_element[1][:,:,1], 50, cmap='rainbow')
+#     plt.contourf(X,Y,one_element[2][:,:,1], 50, cmap='rainbow')
 #     plt.show() 
 
 
