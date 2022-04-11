@@ -5,13 +5,13 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import os
-# from tensorflow.keras import backend as K
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-# from tensorflow.compat.v1 import ConfigProto
-# from tensorflow.compat.v1 import InteractiveSession
-# config = ConfigProto()
-# config.gpu_options.allow_growth = True
-# session = InteractiveSession(config=config)
+from tensorflow.keras import backend as K
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 
 DataPath,LogPath,TrainImgPath = '.\\Images_mul_in', '.\\Images_mul_in', '.\\Images_mul_in'
 if not os.path.isdir(DataPath): os.makedirs(DataPath)
@@ -62,14 +62,14 @@ c5 = tf.keras.layers.Dropout(0.3)(c5)
 c5 = tf.keras.layers.Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c5)
 #c5 = tf.keras.layers.BatchNormalization()(c5)
 
-c1_para = tf.keras.layers.Dense(16, activation = 'relu')(inputs_para)
-c2_para = tf.keras.layers.Dense(64, activation ='relu')(c1_para)
-c3_para = tf.keras.layers.Reshape((8,8,1))(c2_para)
+# c1_para = tf.keras.layers.Dense(16, activation = 'relu')(inputs_para)
+# c2_para = tf.keras.layers.Dense(64, activation ='relu')(c1_para)
+# c3_para = tf.keras.layers.Reshape((8,8,1))(c2_para)
 
-combine = tf.keras.layers.concatenate([c5,c3_para])
+# combine = tf.keras.layers.concatenate([c5,c3_para])
 
 
-u6 = tf.keras.layers.Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(combine)
+u6 = tf.keras.layers.Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c5)
 #u6 = tf.keras.layers.concatenate([u6, c4])
 c6 = tf.keras.layers.Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u6)
 #c6 = tf.keras.layers.BatchNormalization()(c6)
@@ -136,7 +136,7 @@ print(model.summary()) #打印神经网络结构，统计参数数目
 
 #--------------------------------------------
 # 读取 TFRecord 文件
-tfrecord_file = '.\\Images_mul_in\\TrainData.tfrecords'
+tfrecord_file = '.\\Images_mul_in\\TrainDataAP.tfrecords'
 raw_dataset = tf.data.TFRecordDataset(tfrecord_file)   
 #读取验证集文件
 # tfrecord_file_val = '.\\Images\\ValidationData.tfrecords'
@@ -195,7 +195,7 @@ history = model.fit(train_dataset, epochs=EPOCHS)#,validation_data = val_dataset
 print("checkpoint saved.")
 
 # https://tensorflow.google.cn/guide/keras/save_and_serialize?hl=en
-model.save(LogPath+"\\ModelSaved_mul_in")#,custom_objects={"dice_loss": dice_loss}) # 或者 tf.keras.models.save_model(model,LogPath+"\ModelSaved") 
+model.save(LogPath+"\\ModelSaved_mul_in-AP")#,custom_objects={"dice_loss": dice_loss}) # 或者 tf.keras.models.save_model(model,LogPath+"\ModelSaved") 
 print('Model saved.') # 最后默认生成 .pb 格式模型
 #model=tf.keras.models.load_model(LogPath+"\\ModelSaved")
 #print('Model Loaded')
@@ -211,8 +211,8 @@ def onehot_to_mask(mask, palette):
     return x
 
 
-FieldSource=np.load(DataPath+'\\validation_data\\Source\\source1.npy')   
-FieldTarget=np.load(DataPath+'\\validation_data\\Target\\target1.npy')  
+FieldSource=np.load(DataPath+'\\validation_data\\Source\\source0.npy')   
+FieldTarget=np.load(DataPath+'\\validation_data\\Target\\target0.npy')  
 FieldPara = np.zeros(3,dtype = np.float32)
 FieldPara[0] = FieldSource[0,0,2]
 FieldPara[1] = FieldSource[0,0,3]
@@ -227,10 +227,12 @@ FieldInput = [Field,FieldPara]
 #FieldSource=FieldSource.reshape(-1,Xrange,Yrange,5)
 FieldPredic=model.predict(FieldInput) 
 
-FieldPredicAmp = FieldPredic[:,:,:,0].reshape(Xrange,Yrange)
-FieldPredicPha = FieldPredic[:,:,:,1].reshape(Xrange,Yrange)
-FieldTargetAmp = FieldTarget[:,:,0]
-FieldTargetPha = FieldTarget[:,:,1]
+FielddPredicC = FieldPredic[:,:,:,0].reshape(Xrange,Yrange)+1j*FieldPredic[:,:,:,1].reshape(Xrange,Yrange)
+FieldPredicAmp = np.abs(FielddPredicC)
+FieldPredicPha = np.angle(FielddPredicC)
+FieldTargetC = FieldTarget[:,:,0]+1j*FieldTarget[:,:,1]
+FieldTargetAmp = np.abs(FieldTargetC)
+FieldTargetPha = np.angle(FieldTargetC)
 plt.contourf(X,Y,FieldTargetAmp, 50, cmap='rainbow')
 plt.show() 
 plt.contourf(X,Y,FieldTargetPha, 50, cmap='rainbow')

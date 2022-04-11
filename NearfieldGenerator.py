@@ -32,7 +32,7 @@ theta =np.pi/3
 phi = np.pi/3
 
 NumSamples = 1000
-tfrecord_file = '.\\Images_mul_in\\TrainData.tfrecords'
+tfrecord_file = '.\\Images_mul_in\\ValidationDataAP.tfrecords'
 with tf.io.TFRecordWriter(tfrecord_file) as writer:
      for i in range(NumSamples):
         # 高斯方法生成
@@ -143,8 +143,10 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
 
 
         Surf2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
-        Surf2Write[:,:,0] = np.real(Surf)
-        Surf2Write[:,:,1] = np.imag(Surf)
+        # Surf2Write[:,:,0] = np.real(Surf)
+        # Surf2Write[:,:,1] = np.imag(Surf)
+        Surf2Write[:,:,0] = np.abs(Surf)
+        Surf2Write[:,:,1] = np.angle(Surf)
         
         # Surftemp = np.zeros([Xrange,Yrange,5],dtype = np.float32)
         # Surftemp[:,:,0] = Surf2Write[:,:,0]
@@ -161,8 +163,10 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         SurfPara[2] = phi
         SurfPara = SurfPara.tolist()
         Eresult2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
-        Eresult2Write[:,:,0] = np.real(Eresult)
-        Eresult2Write[:,:,1] = np.imag(Eresult)
+        # Eresult2Write[:,:,0] = np.real(Eresult)
+        # Eresult2Write[:,:,1] = np.imag(Eresult)
+        Eresult2Write[:,:,0] = np.abs(Eresult)
+        Eresult2Write[:,:,1] = np.angle(Eresult)
         #np.save(".\\Images_mul_in\\validation_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
         Eresult2Write =Eresult2Write.flatten().tolist()     
         featureDic = {   # 建立 tf.train.Feature 字典
