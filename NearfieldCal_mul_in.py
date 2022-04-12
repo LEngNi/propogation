@@ -28,78 +28,90 @@ inputs = tf.keras.Input(shape=(Xrange, Yrange , 2)) #需要（长，宽，通道
 inputs_para = tf.keras.Input(shape = (3,))
 #inputs_pad = tf.keras.layers.ZeroPadding2D(((14,13),(14,13)))(inputs)
 #print(inputs_pad.shape)
+c1_para = tf.keras.layers.Dense(16, activation = 'relu')(inputs_para)
+c2_para = tf.keras.layers.Dense(64, activation ='relu')(c1_para)
+c3_para = tf.keras.layers.Dense(256, activation ='relu')(c2_para)
+c4_para = tf.keras.layers.Dense(1024, activation ='relu')(c3_para)
+c5_para = tf.keras.layers.Dense(4096, activation ='relu')(c4_para)
+c5_para = tf.keras.layers.Dense(16384, activation ='relu')(c4_para)
+c5_para = tf.keras.layers.Reshape((128,128,1))(c5_para)
+c5_para = tf.tile(c5_para,[1,1,1,16])
+
+
+
 c1 = tf.keras.layers.Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(inputs)
-#c1 = tf.keras.layers.BatchNormalization()(c1)
+c1 = tf.keras.layers.BatchNormalization()(c1)
 c1 = tf.keras.layers.Dropout(0.1)(c1)
 c1 = tf.keras.layers.Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c1)
-#c1 = tf.keras.layers.BatchNormalization()(c1)
-p1 = tf.keras.layers.MaxPooling2D((2, 2))(c1)
+c1 = tf.keras.layers.BatchNormalization()(c1)
+combine = tf.keras.layers.multiply([c1,c5_para])
+p1 = tf.keras.layers.MaxPooling2D((2, 2))(combine)
+
+
 
 c2 = tf.keras.layers.Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p1)
-#c2 = tf.keras.layers.BatchNormalization()(c2)
+c2 = tf.keras.layers.BatchNormalization()(c2)
 c2 = tf.keras.layers.Dropout(0.1)(c2)
 c2 = tf.keras.layers.Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c2)
-#c2 = tf.keras.layers.BatchNormalization()(c2)
+c2 = tf.keras.layers.BatchNormalization()(c2)
 p2 = tf.keras.layers.MaxPooling2D((2, 2))(c2)
 
 c3 = tf.keras.layers.Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p2)
-#c3 = tf.keras.layers.BatchNormalization()(c3)
+c3 = tf.keras.layers.BatchNormalization()(c3)
 c3 = tf.keras.layers.Dropout(0.2)(c3)
 c3 = tf.keras.layers.Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c3)
 c3 = tf.keras.layers.BatchNormalization()(c3)
 p3 = tf.keras.layers.MaxPooling2D((2, 2))(c3)
 
 c4 = tf.keras.layers.Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p3)
-#c4 = tf.keras.layers.BatchNormalization()(c4)
+c4 = tf.keras.layers.BatchNormalization()(c4)
 c4 = tf.keras.layers.Dropout(0.2)(c4)
 c4 = tf.keras.layers.Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c4)
-#c4 = tf.keras.layers.BatchNormalization()(c4)
+c4 = tf.keras.layers.BatchNormalization()(c4)
 p4 = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))(c4)
 
 c5 = tf.keras.layers.Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(p4)
-#c5 = tf.keras.layers.BatchNormalization()(c5)
+c5 = tf.keras.layers.BatchNormalization()(c5)
 c5 = tf.keras.layers.Dropout(0.3)(c5)
 c5 = tf.keras.layers.Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c5)
-#c5 = tf.keras.layers.BatchNormalization()(c5)
+c5 = tf.keras.layers.BatchNormalization()(c5)
 
-# c1_para = tf.keras.layers.Dense(16, activation = 'relu')(inputs_para)
-# c2_para = tf.keras.layers.Dense(64, activation ='relu')(c1_para)
-# c3_para = tf.keras.layers.Reshape((8,8,1))(c2_para)
 
-# combine = tf.keras.layers.concatenate([c5,c3_para])
 
 
 u6 = tf.keras.layers.Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c5)
 #u6 = tf.keras.layers.concatenate([u6, c4])
 c6 = tf.keras.layers.Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u6)
-#c6 = tf.keras.layers.BatchNormalization()(c6)
+c6 = tf.keras.layers.BatchNormalization()(c6)
 c6 = tf.keras.layers.Dropout(0.2)(c6)
 c6 = tf.keras.layers.Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c6)
-#c6 = tf.keras.layers.BatchNormalization()(c6)
+c6 = tf.keras.layers.BatchNormalization()(c6)
 
 u7 = tf.keras.layers.Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(c6)
 #u7 = tf.keras.layers.concatenate([u7, c3])
 c7 = tf.keras.layers.Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u7)
-#c7 = tf.keras.layers.BatchNormalization()(c7)
+c7 = tf.keras.layers.BatchNormalization()(c7)
 c7 = tf.keras.layers.Dropout(0.2)(c7)
 c7 = tf.keras.layers.Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c7)
-#c7 = tf.keras.layers.BatchNormalization()(c7)
+c7 = tf.keras.layers.BatchNormalization()(c7)
 
 u8 = tf.keras.layers.Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(c7)
 #u8 = tf.keras.layers.concatenate([u8, c2])
 c8 = tf.keras.layers.Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u8)
-#c8 = tf.keras.layers.BatchNormalization()(c8)
+c8 = tf.keras.layers.BatchNormalization()(c8)
 c8 = tf.keras.layers.Dropout(0.1)(c8)
 c8 = tf.keras.layers.Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c8)
-#c8 = tf.keras.layers.BatchNormalization()(c8)
+c8 = tf.keras.layers.BatchNormalization()(c8)
 
 u9 = tf.keras.layers.Conv2DTranspose(16, (2, 2), strides=(2, 2), padding='same')(c8)
 #u9 = tf.keras.layers.concatenate([u9, c1], axis=3)
 c9 = tf.keras.layers.Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(u9)
-#c9 = tf.keras.layers.BatchNormalization()(c9)
+c9 = tf.keras.layers.BatchNormalization()(c9)
 c9 = tf.keras.layers.Dropout(0.1)(c9)
 c9 = tf.keras.layers.Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same')(c9)
-#c9 = tf.keras.layers.BatchNormalization()(c9)
+c9 = tf.keras.layers.BatchNormalization()(c9)
+
+
 
 outputs = tf.keras.layers.Conv2D(2, (1, 1))(c9)
 model = tf.keras.Model(inputs=[inputs,inputs_para], outputs=[outputs])
@@ -139,8 +151,8 @@ print(model.summary()) #打印神经网络结构，统计参数数目
 tfrecord_file = '.\\Images_mul_in\\TrainDataAP.tfrecords'
 raw_dataset = tf.data.TFRecordDataset(tfrecord_file)   
 #读取验证集文件
-# tfrecord_file_val = '.\\Images\\ValidationData.tfrecords'
-# raw_dataset_val = tf.data.TFRecordDataset(tfrecord_file_val)
+tfrecord_file_val = '.\\Images_mul_in\\ValidationDataAP.tfrecords'
+raw_dataset_val = tf.data.TFRecordDataset(tfrecord_file_val)
 
 
 feature_description = { # 定义Feature结构，告诉解码器每个Feature的类型是什么
@@ -158,15 +170,15 @@ NumSamples=1000
 buffer_size=NumSamples  #总数
 batch_size=16    #每次训练样本数，平均后产生梯度即可
 #num_batches=buffer_size//batch_size #样本批次
-EPOCHS=20 #重复一整套训练数据的次数
+EPOCHS=52 #重复一整套训练数据的次数
 
 train_dataset = raw_dataset.map(read_example,num_parallel_calls=tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.shuffle(buffer_size).batch(batch_size)#.repeat(5) 找199个出来，设每批次399/40个
 
-# val_dataset = raw_dataset_val.map(read_example, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-# val_dataset = val_dataset.prefetch(tf.data.experimental.AUTOTUNE)
-# val_dataset = val_dataset.shuffle(buffer_size).batch(batch_size)
+val_dataset = raw_dataset_val.map(read_example, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+val_dataset = val_dataset.prefetch(tf.data.experimental.AUTOTUNE)
+val_dataset = val_dataset.shuffle(buffer_size).batch(batch_size)
 
 # #--------------------------------------------
 # # 从文件恢复模型参数,暂时根据需要手动控制
@@ -182,20 +194,20 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=LogPath, histogram
 train_summary_writer = tf.summary.create_file_writer(LogPath)
 
 #早停策略
-earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='MSE', min_delta=0.01,patience=3)
+earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.01,patience=3)
 
 
 
 
 #训练 # validation_data 可以再用测试数据。打乱，分批已经处理过,这是是重复，插入监控
-history = model.fit(train_dataset, epochs=EPOCHS)#,validation_data = val_dataset)#,validation_data=train_dataset)
+history = model.fit(train_dataset, epochs=EPOCHS,validation_data = val_dataset)#,validation_data=train_dataset)
 
 #记录保存模型参数，待后续使用
 #manager.save()
 print("checkpoint saved.")
 
 # https://tensorflow.google.cn/guide/keras/save_and_serialize?hl=en
-model.save(LogPath+"\\ModelSaved_mul_in-AP")#,custom_objects={"dice_loss": dice_loss}) # 或者 tf.keras.models.save_model(model,LogPath+"\ModelSaved") 
+model.save(LogPath+"\\ModelSaved_mul_in-AP-MLP-bbb")#,custom_objects={"dice_loss": dice_loss}) # 或者 tf.keras.models.save_model(model,LogPath+"\ModelSaved") 
 print('Model saved.') # 最后默认生成 .pb 格式模型
 #model=tf.keras.models.load_model(LogPath+"\\ModelSaved")
 #print('Model Loaded')
@@ -228,11 +240,15 @@ FieldInput = [Field,FieldPara]
 FieldPredic=model.predict(FieldInput) 
 
 FielddPredicC = FieldPredic[:,:,:,0].reshape(Xrange,Yrange)+1j*FieldPredic[:,:,:,1].reshape(Xrange,Yrange)
-FieldPredicAmp = np.abs(FielddPredicC)
-FieldPredicPha = np.angle(FielddPredicC)
+# FieldPredicAmp = np.abs(FielddPredicC)
+# FieldPredicPha = np.angle(FielddPredicC)
+FieldPredicAmp = FieldPredic[:,:,:,0].reshape(Xrange,Yrange)
+FieldPredicPha = FieldPredic[:,:,:,1].reshape(Xrange,Yrange)
 FieldTargetC = FieldTarget[:,:,0]+1j*FieldTarget[:,:,1]
-FieldTargetAmp = np.abs(FieldTargetC)
-FieldTargetPha = np.angle(FieldTargetC)
+# FieldTargetAmp = np.abs(FieldTargetC)
+# FieldTargetPha = np.angle(FieldTargetC)
+FieldTargetAmp = FieldTarget[:,:,0]
+FieldTargetPha = FieldTarget[:,:,1]
 plt.contourf(X,Y,FieldTargetAmp, 50, cmap='rainbow')
 plt.show() 
 plt.contourf(X,Y,FieldTargetPha, 50, cmap='rainbow')
