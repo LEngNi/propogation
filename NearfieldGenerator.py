@@ -31,7 +31,7 @@ Ymesh,Xmesh=np.meshgrid(X, Y)
 theta =np.pi/3
 phi = np.pi/3
 
-NumSamples = 1000
+NumSamples = 1
 tfrecord_file = '.\\Images_mul_in\\ValidationDataAP.tfrecords'
 with tf.io.TFRecordWriter(tfrecord_file) as writer:
      for i in range(NumSamples):
@@ -148,13 +148,13 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         Surf2Write[:,:,0] = np.abs(Surf)
         Surf2Write[:,:,1] = np.angle(Surf)
         
-        # Surftemp = np.zeros([Xrange,Yrange,5],dtype = np.float32)
-        # Surftemp[:,:,0] = Surf2Write[:,:,0]
-        # Surftemp[:,:,1] = Surf2Write[:,:,1]
-        # Surftemp[:,:,2] = z0
-        # Surftemp[:,:,3] = theta
-        # Surftemp[:,:,4] = phi        
-        # np.save(".\\Images_mul_in\\validation_data\\Source\\source"+str(i)+'.npy',Surftemp)
+        Surftemp = np.zeros([Xrange,Yrange,5],dtype = np.float32)
+        Surftemp[:,:,0] = Surf2Write[:,:,0]
+        Surftemp[:,:,1] = Surf2Write[:,:,1]
+        Surftemp[:,:,2] = z0
+        Surftemp[:,:,3] = theta
+        Surftemp[:,:,4] = phi        
+        np.save(".\\Images_mul_in\\validation_data\\Source\\source"+str(i)+'.npy',Surftemp)
         
         Surf2Write = Surf2Write.flatten().tolist()
         SurfPara = np.zeros(3,dtype = np.float32)
@@ -167,7 +167,7 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         # Eresult2Write[:,:,1] = np.imag(Eresult)
         Eresult2Write[:,:,0] = np.abs(Eresult)
         Eresult2Write[:,:,1] = np.angle(Eresult)
-        #np.save(".\\Images_mul_in\\validation_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
+        np.save(".\\Images_mul_in\\validation_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
         Eresult2Write =Eresult2Write.flatten().tolist()     
         featureDic = {   # 建立 tf.train.Feature 字典
            'Source': tf.train.Feature(float_list=tf.train.FloatList(value=Surf2Write)), 
