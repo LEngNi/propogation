@@ -32,7 +32,7 @@ theta =np.pi/3
 phi = np.pi/3
 
 NumSamples = 100
-tfrecord_file = '.\\Images_mul_in\\ValidationDataAP.tfrecords'
+tfrecord_file = '.\\Images_mul_in\\ValidationDataA.tfrecords'
 with tf.io.TFRecordWriter(tfrecord_file) as writer:
      for i in range(NumSamples):
         # 高斯方法生成
@@ -142,19 +142,19 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         print (i)
 
 
-        Surf2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
+        Surf2Write = np.zeros([Xrange,Yrange],dtype = np.float32)
         # Surf2Write[:,:,0] = np.real(Surf)
         # Surf2Write[:,:,1] = np.imag(Surf)
-        Surf2Write[:,:,0] = np.abs(Surf)
-        Surf2Write[:,:,1] = np.angle(Surf)
+        Surf2Write[:,:] = np.abs(Surf)
+        #Surf2Write[:,:,1] = np.angle(Surf)
         
-        # Surftemp = np.zeros([Xrange,Yrange,5],dtype = np.float32)
-        # Surftemp[:,:,0] = Surf2Write[:,:,0]
-        # Surftemp[:,:,1] = Surf2Write[:,:,1]
-        # Surftemp[:,:,2] = z0
-        # Surftemp[:,:,3] = theta
-        # Surftemp[:,:,4] = phi        
-        # np.save(".\\Images_mul_in\\validation_data\\Source\\source"+str(i)+'.npy',Surftemp)
+        Surftemp = np.zeros([Xrange,Yrange,4],dtype = np.float32)
+        Surftemp[:,:,0] = Surf2Write[:,:]
+        #Surftemp[:,:,1] = Surf2Write[:,:,1]
+        Surftemp[:,:,1] = z0
+        Surftemp[:,:,2] = theta
+        Surftemp[:,:,3] = phi        
+        np.save(".\\Images_mul_in\\validation_data\\Source\\source"+str(i)+'.npy',Surftemp)
         
         Surf2Write = Surf2Write.flatten().tolist()
         SurfPara = np.zeros(3,dtype = np.float32)
@@ -162,12 +162,12 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         SurfPara[1] = theta
         SurfPara[2] = phi
         SurfPara = SurfPara.tolist()
-        Eresult2Write = np.zeros([Xrange,Yrange,2],dtype = np.float32)
+        Eresult2Write = np.zeros([Xrange,Yrange],dtype = np.float32)
         # Eresult2Write[:,:,0] = np.real(Eresult)
         # Eresult2Write[:,:,1] = np.imag(Eresult)
-        Eresult2Write[:,:,0] = np.abs(Eresult)
-        Eresult2Write[:,:,1] = np.angle(Eresult)
-        #np.save(".\\Images_mul_in\\validation_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
+        Eresult2Write[:,:] = np.abs(Eresult)
+        #Eresult2Write[:,:,1] = np.angle(Eresult)
+        np.save(".\\Images_mul_in\\validation_data\\Target\\target"+str(i)+'.npy',Eresult2Write) 
         Eresult2Write =Eresult2Write.flatten().tolist()     
         featureDic = {   # 建立 tf.train.Feature 字典
            'Source': tf.train.Feature(float_list=tf.train.FloatList(value=Surf2Write)), 
@@ -179,12 +179,12 @@ with tf.io.TFRecordWriter(tfrecord_file) as writer:
         writer.write(example.SerializeToString())   
 print("All Files are generated.")
 
-dataset = tf.data.TFRecordDataset(tfrecord_file)    
-feature_description = { # 定义Feature结构，告诉解码器每个Feature的类型是什么
-    'Source': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32),
-    'Para': tf.io.FixedLenFeature([3,], tf.float32),
-    'Target': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32)
-}
+# dataset = tf.data.TFRecordDataset(tfrecord_file)    
+# feature_description = { # 定义Feature结构，告诉解码器每个Feature的类型是什么
+#     'Source': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32),
+#     'Para': tf.io.FixedLenFeature([3,], tf.float32),
+#     'Target': tf.io.FixedLenFeature([Xrange,Yrange,2], tf.float32)
+# }
 
 # def read_example(example_string): #    从TFrecord格式文件中读取数据
 #     feature_dict = tf.io.parse_single_example(example_string, feature_description)
